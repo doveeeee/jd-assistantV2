@@ -316,6 +316,9 @@ class Assistant(object):
             logger.info(resp_json)
             return False
 
+    def login_by_pwd(self):
+        pass
+
     def login_by_QRcode(self):
         """二维码登陆
         :return:
@@ -402,7 +405,7 @@ class Assistant(object):
         resp = self.sess.get(url=reserve_url, headers=headers)
         soup = BeautifulSoup(resp.text, "html.parser")
         result = soup.find('p', {'class': 'bd-right-result'})
-        if result :
+        if result:
             reserve_result = result.text.strip(' \t\r\n')
             # 预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约
             logger.info(reserve_result)
@@ -646,13 +649,12 @@ class Assistant(object):
         soup = BeautifulSoup(resp.text, "html.parser")
         name = get_tag_value(soup.select("div.sku-name"))
         price = self.get_item_price(sku_id)
-        return {'name':name,'price':price}
-    
+        return {'name': name, 'price': price}
+
     def print_item_info(self, sku_id):
         item_info = self.get_item_info(sku_id)
-        print("商品名称:",item_info.get('name'))
-        print("商品价格:",item_info.get('price'))
-
+        print("商品名称:", item_info.get('name'))
+        print("商品价格:", item_info.get('price'))
 
     @check_login
     def add_item_to_cart(self, sku_ids):
@@ -1215,7 +1217,6 @@ class Assistant(object):
             else:
                 logger.info("获取初始化信息失败: %s，0.5秒后重试", sku_id)
                 time.sleep(0.5)
-        
 
     def _gen_seckill_order_data(self, sku_id, num=1):
         """生成提交抢购订单所需的请求体参数
@@ -1342,7 +1343,6 @@ class Assistant(object):
         self.add_item_to_cart(sku_ids=sku_id)  # 根据商品id添加购物车
         self.get_checkout_page_detail()
         self.track_id = self.sess.cookies['TrackID']
-
 
     def exec_seckill_by_time(self, sku_ids, buy_time, retry=4, interval=4, num=1):
         """定时抢购
