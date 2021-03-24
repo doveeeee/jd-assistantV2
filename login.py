@@ -298,7 +298,7 @@ def get_diff_location():
     x, y = np.unravel_index(result.argmax(), result.shape)
     print("distance:", y)
     # jd页面实际缩放图片，距离大约为图片距离的75%
-    y = int(y * 0.75)
+    y = int(y * 0.77)
     print("distance_actually:", y)
     return y
 
@@ -334,6 +334,24 @@ def get_tracks(distance):
     return trace
 
 
+def slide2(distance):
+    def append_step(step_x, step_y, cost):
+        global x,y,timestamp
+        x += step_x
+        y += step_y
+        timestamp += cost
+        res.append([x, y, timestamp])
+    timestamp = get_timestamp()
+    x, y = 733, 380
+    res = [[702, 357, timestamp], [x, y, timestamp]]
+    i = 0
+    append_step(1, 0, random.randint(30, 100))
+    append_step(1, 0, random.randint(5, 10))
+    append_step(1, 0, random.randint(3, 5))
+    while i < distance:
+
+
+
 def slide(distance):
     template_dis = 136
     timestamp = get_timestamp()
@@ -360,7 +378,7 @@ def slide(distance):
         if relative > 0:
             step.insert(idx, (step[idx - 1 - 1] + step[idx - 1]) // 2)
         else:
-            step.pop(idx - rm_offset)
+            step.pop(idx - rm_offset - 1)
             rm_offset += 1
 
     if len(step) != distance:
@@ -370,13 +388,16 @@ def slide(distance):
     change_y_count = 0
     change_y = random.randint(7, 11)
     i = 0
+    total_time = 0
     while i < distance:
         x += 1
         if change_y_count >= change_y:
             y += 1 if random.randint(0, 1) == 0 else -1
             change_y = random.randint(7, 11)
             change_y_count = 0
-        timestamp += step[i]
+        randtime = random.randint(0, 2)
+        timestamp += step[i] + randtime
+        total_time += step[i] + randtime
         res.append([x, y, timestamp])
         i += 1
         change_y_count += 1
@@ -386,9 +407,10 @@ def slide(distance):
     for time_step in check_pass_step:
         x += s[i]
         timestamp += time_step
+        total_time += time_step
         res.append([x, y, timestamp])
         i += 1
-    return res
+    return res, total_time
 
 
 def slide_encrypt(c):
@@ -460,8 +482,10 @@ def pass_slide_captcha(username, eid, jdtdmap_session_id, validate_id, distance)
         "Referer": "https://passport.jd.com/",
         "User-Agent": user_agent
     }
+    slide_data, total_time = slide(distance)
+    time.sleep(total_time / 1000 + 1)
     param = {
-        "d": slide_encrypt(slide(distance)),
+        "d": slide_encrypt(slide_data),
         "c": validate_id,
         "w": 278,
         "appId": "1604ebb2287",
@@ -476,6 +500,8 @@ def pass_slide_captcha(username, eid, jdtdmap_session_id, validate_id, distance)
 
     resp = sess.get(url, params=param, headers=headers)
     print(resp.text)
+    resp = json.loads(resp.text[resp.text.find("{"):resp.text.rfind("}") + 1])
+    return False if resp["success"] == "0" else True
 
 
 def login(username, password):
@@ -519,14 +545,16 @@ def main():
     sess.get(url, headers={"User-Agent": user_agent})
     eid = get_eid()
     sess_id = get_jdtdmap_session_id()
-    challenge = get_captcha(eid)
-    distance = get_diff_location()
-    pass_slide_captcha("123123", eid, sess_id, challenge, distance)
+    success = False
+    while not success:
+        challenge = get_captcha(eid)
+        distance = get_diff_location()
+        success = pass_slide_captcha("123123", eid, sess_id, challenge, distance)
+        time.sleep(0.5)
 
 
 if __name__ == '__main__':
     main()
-
     # -----测试代码
     # test()
     # get_diff_location()
